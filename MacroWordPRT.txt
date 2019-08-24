@@ -1,5 +1,3 @@
-
- 
 '**************************************************************************'*
 '* AUTHOR & DATE:   STEPHEN BULLEN, Office Automation Ltd
 '*                  15 November 1998
@@ -420,7 +418,7 @@ Dim i, a
 Dim tblCount
 
 tblCount = ActiveDocument.Tables.Count
-For a = 1 To tblCount
+For a = 2 To tblCount
 Set wrdTbl = ActiveDocument.Tables(a)
 
     '~~> Get the word table Row and Column Counts
@@ -456,7 +454,7 @@ With ActiveDocument
             strGuid = Replace(strGuid, "-", "")
             strGuid = Mid(strGuid, 1, Len(strGuid) - 2)
     
-            Set myCells = .Range(start:=.Tables(a).Cell(i, 2).Range.start, _
+            Set myCells = .Range(Start:=.Tables(a).Cell(i, 2).Range.Start, _
             End:=.Tables(a).Cell(i, ColCount - 2).Range.End)
             myCells.Select
             Selection.Copy
@@ -464,36 +462,17 @@ With ActiveDocument
     
         
         
-            Set myCells = .Range(start:=.Tables(a).Cell(i, ColCount - 1).Range.start, _
-            End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
-            myCells.Select
-            Selection.PasteSpecial Link:=False, DataType:=wdPasteEnhancedMetafile, Placement:=wdInLine, _
-            DisplayAsIcon:=False
-            Set myCells = .Range(start:=.Tables(a).Cell(i, ColCount - 1).Range.start, _
-                 End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
-            myCells.Select
-            SaveClip2Bit ("c:\temp\" & strGuid + "_B.emf")
-            
-            Selection.Delete
+            Call Paste("c:\temp\" & strGuid + "_B.emf", ActiveDocument)
              
              
              
-             Set myCells = .Range(start:=.Tables(a).Cell(i, 1).Range.start, _
+             Set myCells = .Range(Start:=.Tables(a).Cell(i, 1).Range.Start, _
                  End:=.Tables(a).Cell(i, 1).Range.End)
              myCells.Select
                  Selection.Copy
              
-             Set myCells = .Range(start:=.Tables(a).Cell(i, ColCount - 1).Range.start, _
-                 End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
-             myCells.Select
-             Selection.PasteSpecial Link:=False, DataType:=wdPasteEnhancedMetafile, Placement:=wdInLine, _
-             DisplayAsIcon:=False
-            Set myCells = .Range(start:=.Tables(a).Cell(i, ColCount - 1).Range.start, _
-                 End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
-             myCells.Select
-            SaveClip2Bit ("c:\temp\" & strGuid + "_F.emf")
+             Call Paste("c:\temp\" & strGuid + "_F.emf", ActiveDocument)
             
-             Selection.Delete
             
     End If
     Next
@@ -511,13 +490,17 @@ ActiveDocument.Save
 
 End Sub
 
-Sub Macro1()
-'
-' Macro1 Macro
-'
-'
-    Selection.Shading.Texture = wdTextureNone
-    Selection.Shading.ForegroundPatternColor = wdColorAutomatic
-    Selection.Shading.BackgroundPatternColor = -587137025
+Private Sub Paste(strPath, ActiveDocument)
+Dim myCells
+With ActiveDocument
+ Set myCells = .Range(Start:=.Tables(1).Cell(1, 1).Range.Start, _
+            End:=.Tables(1).Cell(1, 1).Range.End)
+            myCells.Select
+            Selection.PasteSpecial Link:=False, DataType:=wdPasteEnhancedMetafile, Placement:=wdInLine, _
+            DisplayAsIcon:=False
+          
+            SaveClip2Bit (strPath)
+            
+            Selection.Delete
+End With
 End Sub
-
