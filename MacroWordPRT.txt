@@ -130,8 +130,7 @@ Declare Function CopyImage Lib "user32" (ByVal Handle As Long, ByVal un1 As Long
 
 #End If
 
-
-
+ Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As LongPtr)
 
 'The API format types we're interested in
 Const CF_BITMAP = 2
@@ -457,21 +456,45 @@ With ActiveDocument
             Set myCells = .Range(Start:=.Tables(a).Cell(i, 2).Range.Start, _
             End:=.Tables(a).Cell(i, ColCount - 2).Range.End)
             myCells.Select
+          
             Selection.Copy
+           
         
-    
+            Dim tmpStart
+            tmpStart = Timer
+            Do
+                DoEvents
+            Loop While (tmpStart + 1) > Timer
         
+            Set myCells = .Range(Start:=.Tables(a).Cell(i, ColCount - 1).Range.Start, _
+            End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
         
-            Call Paste("c:\temp\" & strGuid + "_B.emf", ActiveDocument)
+            Call Paste("c:\temp\" & strGuid + "_B.emf", ActiveDocument, myCells)
              
-             
+            
+            tmpStart = Timer
+            Do
+                DoEvents
+            Loop While (tmpStart + 1) > Timer
              
              Set myCells = .Range(Start:=.Tables(a).Cell(i, 1).Range.Start, _
                  End:=.Tables(a).Cell(i, 1).Range.End)
              myCells.Select
+            
+            tmpStart = Timer
+            Do
+                DoEvents
+            Loop While (tmpStart + 1) > Timer
                  Selection.Copy
-             
-             Call Paste("c:\temp\" & strGuid + "_F.emf", ActiveDocument)
+            
+            tmpStart = Timer
+            Do
+                DoEvents
+            Loop While (tmpStart + 1) > Timer
+            
+            Set myCells = .Range(Start:=.Tables(a).Cell(i, ColCount - 1).Range.Start, _
+            End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
+             Call Paste("c:\temp\" & strGuid + "_F.emf", ActiveDocument, myCells)
             
             
     End If
@@ -486,21 +509,30 @@ With ActiveDocument
 '
 Next
 
-ActiveDocument.Save
+
 
 End Sub
 
-Private Sub Paste(strPath, ActiveDocument)
-Dim myCells
+Private Sub Paste(strPath, ActiveDocument, myCells)
+
 With ActiveDocument
- Set myCells = .Range(Start:=.Tables(1).Cell(1, 1).Range.Start, _
-            End:=.Tables(1).Cell(1, 1).Range.End)
+          
+ 
             myCells.Select
+           Dim tmpStart
+            tmpStart = Timer
+            Do
+                DoEvents
+            Loop While (tmpStart + 1) > Timer
             Selection.PasteSpecial Link:=False, DataType:=wdPasteEnhancedMetafile, Placement:=wdInLine, _
             DisplayAsIcon:=False
-          
+           tmpStart = Timer
+            Do
+                DoEvents
+            Loop While (tmpStart + 1) > Timer
             SaveClip2Bit (strPath)
             
             Selection.Delete
 End With
 End Sub
+
