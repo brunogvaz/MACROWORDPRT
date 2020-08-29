@@ -32,7 +32,7 @@ Option Compare Text
 
 
 'Declare a UDT to store a GUID for the IPicture OLE Interface
-Private Type GUID
+Private Type guid
     Data1 As Long
     Data2 As Integer
     Data3 As Integer
@@ -59,25 +59,25 @@ Private Type GUID_TYPE
     Data3 As Integer
     Data4(7) As Byte
 End Type
-Declare Function CoCreateGuid Lib "ole32" (ByRef GUID As Byte) As Long
+Declare Function CoCreateGuid Lib "ole32" (ByRef guid As Byte) As Long
 'Does the clipboard contain a bitmap/metafile?
-Private Declare PtrSafe Function IsClipboardFormatAvailable Lib "user32" (ByVal wFormat As Integer) As Long
+Private Declare PtrSafe Function IsClipboardFormatAvailable Lib "User32" (ByVal wFormat As Integer) As Long
 
 
 'Open the clipboard to read
-Private Declare PtrSafe Function OpenClipboard Lib "user32" (ByVal hWnd As LongPtr) As Long
+Private Declare PtrSafe Function OpenClipboard Lib "User32" (ByVal hwnd As LongPtr) As Long
 
 
 'Get a pointer to the bitmap/metafile
-Private Declare PtrSafe Function GetClipboardData Lib "user32" (ByVal wFormat As Integer) As LongPtr
+Private Declare PtrSafe Function GetClipboardData Lib "User32" (ByVal wFormat As Integer) As LongPtr
 
 
 'Close the clipboard
-Private Declare PtrSafe Function CloseClipboard Lib "user32" () As Long
+Private Declare PtrSafe Function CloseClipboard Lib "User32" () As Long
 
 
 'Convert the handle into an OLE IPicture interface.
-Private Declare PtrSafe Function OleCreatePictureIndirect Lib "oleaut32.dll" (PicDesc As uPicDesc, RefIID As GUID, ByVal fPictureOwnsHandle As LongPtr, IPic As IPicture) As Long
+Private Declare PtrSafe Function OleCreatePictureIndirect Lib "oleaut32.dll" (PicDesc As uPicDesc, RefIID As guid, ByVal fPictureOwnsHandle As LongPtr, IPic As IPicture) As Long
 
 
 'Create our own copy of the metafile, so it doesn't get wiped out by subsequent clipboard updates.
@@ -85,7 +85,7 @@ Declare PtrSafe Function CopyEnhMetaFile Lib "gdi32" Alias "CopyEnhMetaFileA" (B
 
 
 'Create our own copy of the bitmap, so it doesn't get wiped out by subsequent clipboard updates.
-Declare PtrSafe Function CopyImage Lib "user32" (ByVal Handle As LongPtr, ByVal un1 As Long, ByVal n1 As Long, ByVal n2 As Long, ByVal un2 As Long) As LongPtr
+Declare PtrSafe Function CopyImage Lib "User32" (ByVal Handle As LongPtr, ByVal un1 As Long, ByVal n1 As Long, ByVal n2 As Long, ByVal un2 As Long) As LongPtr
 
 
 #Else
@@ -101,23 +101,23 @@ End Type
 
 
 'Does the clipboard contain a bitmap/metafile?
-Private Declare Function IsClipboardFormatAvailable Lib "user32" (ByVal wFormat As Integer) As Long
+Private Declare Function IsClipboardFormatAvailable Lib "User32" (ByVal wFormat As Integer) As Long
 
 
 'Open the clipboard to read
-Private Declare Function OpenClipboard Lib "user32" (ByVal hWnd As Long) As Long
+Private Declare Function OpenClipboard Lib "User32" (ByVal hwnd As Long) As Long
 
 
 'Get a pointer to the bitmap/metafile
-Private Declare Function GetClipboardData Lib "user32" (ByVal wFormat As Integer) As Long
+Private Declare Function GetClipboardData Lib "User32" (ByVal wFormat As Integer) As Long
 
 
 'Close the clipboard
-Private Declare Function CloseClipboard Lib "user32" () As Long
+Private Declare Function CloseClipboard Lib "User32" () As Long
 
 
 'Convert the handle into an OLE IPicture interface.
-Private Declare Function OleCreatePictureIndirect Lib "olepro32.dll" (PicDesc As uPicDesc, RefIID As GUID, ByVal fPictureOwnsHandle As Long, IPic As IPicture) As Long
+Private Declare Function OleCreatePictureIndirect Lib "olepro32.dll" (PicDesc As uPicDesc, RefIID As guid, ByVal fPictureOwnsHandle As Long, IPic As IPicture) As Long
 
 
 'Create our own copy of the metafile, so it doesn't get wiped out by subsequent clipboard updates.
@@ -125,12 +125,29 @@ Declare Function CopyEnhMetaFile Lib "gdi32" Alias "CopyEnhMetaFileA" (ByVal hem
 
 
 'Create our own copy of the bitmap, so it doesn't get wiped out by subsequent clipboard updates.
-Declare Function CopyImage Lib "user32" (ByVal Handle As Long, ByVal un1 As Long, ByVal n1 As Long, ByVal n2 As Long, ByVal un2 As Long) As Long
+Declare Function CopyImage Lib "User32" (ByVal Handle As Long, ByVal un1 As Long, ByVal n1 As Long, ByVal n2 As Long, ByVal un2 As Long) As Long
 
 
 #End If
 
  Public Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As LongPtr)
+ 
+ 
+Declare Function GlobalAlloc Lib "kernel32" (ByVal wFlags&, ByVal _
+   dwBytes As Long) As Long
+Declare Function GlobalLock Lib "kernel32" (ByVal hMem As Long) _
+   As Long
+Declare Function GlobalUnlock Lib "kernel32" (ByVal hMem As Long) _
+   As Long
+Declare Function GlobalSize Lib "kernel32" (ByVal hMem As Long) _
+   As Long
+Declare Function lstrcpy Lib "kernel32" (ByVal lpString1 As Any, _
+   ByVal lpString2 As Any) As Long
+ 
+Public Const GHND = &H42
+Public Const CF_TEXT = 1
+Public Const MAXSIZE = 4096
+
 
 'The API format types we're interested in
 Const CF_BITMAP = 2
@@ -214,7 +231,7 @@ Private Function CreatePicture(ByVal hPic As Long, ByVal hPal As Long, ByVal lPi
 
 
 ' IPicture requires a reference to "OLE Automation"
-Dim r As Long, uPicInfo As uPicDesc, IID_IDispatch As GUID, IPic As IPicture
+Dim r As Long, uPicInfo As uPicDesc, IID_IDispatch As guid, IPic As IPicture
 
 
 'OLE Picture types
@@ -392,19 +409,39 @@ End Sub
 Public Function GenerateGUID() As String
     Dim ID(0 To 15) As Byte
     Dim N As Long
-    Dim GUID As String
+    Dim guid As String
     Dim Res As Long
     Res = CoCreateGuid(ID(0))
 
     For N = 0 To 15
-        GUID = GUID & IIf(ID(N) < 16, "0", "") & Hex$(ID(N))
-        If Len(GUID) = 8 Or Len(GUID) = 13 Or Len(GUID) = 18 Or Len(GUID) = 23 Then
-            GUID = GUID & "-"
+        guid = guid & IIf(ID(N) < 16, "0", "") & Hex$(ID(N))
+        If Len(guid) = 8 Or Len(guid) = 13 Or Len(guid) = 18 Or Len(guid) = 23 Then
+            guid = guid & "-"
         End If
     Next N
-    GenerateGUID = GUID
+    GenerateGUID = guid
 End Function
+Sub TextFile_Create(strPath As String, guid, Dados As String)
+'PURPOSE: Create A New Text File
 
+
+Dim TextFile As Integer
+
+
+
+'Determine the next file number available for use by the FileOpen function
+  TextFile = FreeFile
+
+'Open the text file
+  Open strPath + guid + ".txt" For Output As TextFile
+
+'Write some lines of text
+  Print #TextFile, Dados
+  
+'Save & Close Text File
+  Close TextFile
+
+End Sub
 
 Sub GerarCardImages()
 '
@@ -456,46 +493,54 @@ With ActiveDocument
             Set myCells = .Range(Start:=.Tables(a).Cell(i, 2).Range.Start, _
             End:=.Tables(a).Cell(i, ColCount - 2).Range.End)
             myCells.Select
-          
-            Selection.Copy
+            
+            'Dim tmpStart
+            'tmpStart = Timer
+            
            
-        
-            Dim tmpStart
-            tmpStart = Timer
-            Do
-                DoEvents
-            Loop While (tmpStart + 1) > Timer
-        
-            Set myCells = .Range(Start:=.Tables(a).Cell(i, ColCount - 1).Range.Start, _
-            End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
-        
-            Call Paste("c:\temp\" & strGuid + "_B.emf", ActiveDocument, myCells)
+           ' Do
+            '    DoEvents
+            'Loop While (tmpStart + 1) > Timer
+            
+           ' Selection.Copy
+           Selection.CopyAsPicture
+         
+             
+            Call Paste2("c:\temp\" & strGuid + "_B.emf", ActiveDocument, myCells)
              
             
-            tmpStart = Timer
-            Do
-                DoEvents
-            Loop While (tmpStart + 1) > Timer
+            
+             
+             Dim texto As String
+             Dim fields(10) As String
+             texto = .Tables(a).Cell(i, 1).Range.Text
+             Dim pos1 As Integer
+             Dim pos2 As Integer
+             pos1 = InStr(1, texto, "**")
+             pos2 = InStr(pos1 + 2, texto, "**")
+             
+             Dim Dados As String
+             If (pos2 > pos1) Then Dados = Mid(texto, pos1 + 2, pos2 - pos1 - 2)
+             
              
              Set myCells = .Range(Start:=.Tables(a).Cell(i, 1).Range.Start, _
                  End:=.Tables(a).Cell(i, 1).Range.End)
              myCells.Select
             
-            tmpStart = Timer
-            Do
-                DoEvents
-            Loop While (tmpStart + 1) > Timer
-                 Selection.Copy
+            'tmpStart = Timer
+            'Do
+            '    DoEvents
+            'Loop While (tmpStart + 1) > Timer
+                ' Selection.Copy
+                Selection.CopyAsPicture
             
-            tmpStart = Timer
-            Do
-                DoEvents
-            Loop While (tmpStart + 1) > Timer
+           
             
-            Set myCells = .Range(Start:=.Tables(a).Cell(i, ColCount - 1).Range.Start, _
-            End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
-             Call Paste("c:\temp\" & strGuid + "_F.emf", ActiveDocument, myCells)
+            'Set myCells = .Range(Start:=.Tables(a).Cell(i, ColCount - 1).Range.Start, _
+            'End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
+            Call Paste2("c:\temp\" & strGuid + "_F.emf", ActiveDocument, myCells)
             
+            TextFile_Create "c:\temp\", strGuid, Dados
             
     End If
     Next
@@ -513,11 +558,79 @@ Next
 
 End Sub
 
+Function ClipBoard_GetData()
+   Dim hClipMemory As Long
+   Dim lpClipMemory As Long
+   Dim MyString As String
+   Dim RetVal As Long
+ 
+   If OpenClipboard(0&) = 0 Then
+      MsgBox "Cannot open Clipboard. Another app. may have it open"
+      Exit Function
+   End If
+          
+   ' Obtain the handle to the global memory
+   ' block that is referencing the text.
+   hClipMemory = GetClipboardData(CF_TEXT)
+   If IsNull(hClipMemory) Then
+      MsgBox "Could not allocate memory"
+      GoTo OutOfHere
+   End If
+ 
+   ' Lock Clipboard memory so we can reference
+   ' the actual data string.
+   lpClipMemory = GlobalLock(hClipMemory)
+ 
+   If Not IsNull(lpClipMemory) Then
+      MyString = Space$(MAXSIZE)
+      RetVal = lstrcpy(MyString, lpClipMemory)
+      RetVal = GlobalUnlock(hClipMemory)
+       
+      ' Peel off the null terminating character.
+      MyString = Mid(MyString, 1, InStr(1, MyString, Chr$(0), 0) - 1)
+   Else
+      MsgBox "Could not lock memory to copy string from."
+   End If
+ 
+OutOfHere:
+ 
+   RetVal = CloseClipboard()
+   ClipBoard_GetData = MyString
+ 
+End Function
+Sub FindInSelection()
+  Dim strFindText1 As String
+   Dim strFindText2 As String
+  Dim strReplaceText As String
+ 
+ Dim myRange
+ 
+  strFindText1 = ClipBoard_GetData
+  
+  strFindText2 = Mid(strFindText1, 1, 8) + "-" + Mid(strFindText1, 9, 4) + "-" + Mid(strFindText1, 13, 4) + "-" + Mid(strFindText1, 17, 4) + "-" + Mid(strFindText1, 21, 12)
+ Set myRange = ActiveDocument.Content
+
+  With myRange.Find
+    .Text = strFindText2
+    .Forward = True
+    .Wrap = wdFindStop
+    .Format = False
+    .MatchCase = False
+    .MatchWholeWord = False
+    .MatchWildcards = False
+    .MatchSoundsLike = False
+    .MatchAllWordForms = False
+  End With
+  If myRange.Find.Execute(FindText:=strFindText2) Then myRange.Select
+End Sub
+
+
+
 Private Sub Paste(strPath, ActiveDocument, myCells)
 
 With ActiveDocument
-          
- 
+          Set myCells = .Range(Start:=.Tables(1).Cell(1, 1).Range.Start, _
+            End:=.Tables(1).Cell(1, 1).Range.End)
             myCells.Select
            Dim tmpStart
             tmpStart = Timer
@@ -526,6 +639,8 @@ With ActiveDocument
             Loop While (tmpStart + 1) > Timer
             Selection.PasteSpecial Link:=False, DataType:=wdPasteEnhancedMetafile, Placement:=wdInLine, _
             DisplayAsIcon:=False
+ 
+
            tmpStart = Timer
             Do
                 DoEvents
@@ -533,6 +648,25 @@ With ActiveDocument
             SaveClip2Bit (strPath)
             
             Selection.Delete
+End With
+End Sub
+
+
+Private Sub Paste2(strPath, ActiveDocument, myCells)
+
+With ActiveDocument
+          
+           Dim tmpStart
+           
+ 
+
+           tmpStart = Timer
+            Do
+                DoEvents
+            Loop While (tmpStart + 1) > Timer
+            SaveClip2Bit (strPath)
+            
+           
 End With
 End Sub
 
