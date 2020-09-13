@@ -393,19 +393,6 @@ errHandler:
 End Sub
  
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 Public Function GenerateGUID() As String
     Dim ID(0 To 15) As Byte
     Dim N As Long
@@ -421,7 +408,7 @@ Public Function GenerateGUID() As String
     Next N
     GenerateGUID = guid
 End Function
-Sub TextFile_Create(strPath As String, guid, Dados As String)
+Sub TextFile_Create(strPath As String, guid, dados As String)
 'PURPOSE: Create A New Text File
 
 
@@ -436,13 +423,111 @@ Dim TextFile As Integer
   Open strPath + guid + ".txt" For Output As TextFile
 
 'Write some lines of text
-  Print #TextFile, Dados
+  Print #TextFile, dados
   
 'Save & Close Text File
   Close TextFile
 
 End Sub
+Function linebreak(myString)
+    If Len(myString) <> 0 Then
+        If Right$(myString, 2) = vbCrLf Or Right$(myString, 2) = vbNewLine Or Right$(myString, 2) = Chr(13) & Chr(7) Then
+            linebreak = Left$(myString, Len(myString) - 2)
+        Else
+            linebreak = myString
+        End If
+    End If
+End Function
+Function getChildMaxIndex(start, table)
+Dim i
+Dim maxIndex
+Dim ColCount
+      
+Dim key
+ColCount = table.Rows(start).Cells.Count
+key = table.Cell(start, ColCount).range.Text
 
+For i = start To table.Rows.Count
+  
+
+      ColCount = table.Rows(i).Cells.Count
+       
+
+      If (Mid(table.Cell(i, ColCount).range.Text, 1, 36) = Mid(key, 1, 36)) Then
+        
+           getChildMaxIndex = getIndexFromGUID(table.Cell(i, ColCount).range.Text)
+    Else
+        getChildMaxIndex = 0
+        Exit Function
+        
+      End If
+Next
+      
+End Function
+
+Function getChildIndexList(start, table) As String
+Dim i
+Dim index
+Dim ColCount
+Dim ret As String
+
+ret = ""
+      
+Dim key
+ColCount = table.Rows(start).Cells.Count
+key = table.Cell(start, ColCount).range.Text
+
+For i = start To table.Rows.Count
+  
+
+      ColCount = table.Rows(i).Cells.Count
+       
+
+      If (Mid(table.Cell(i, ColCount).range.Text, 1, 36) = Mid(key, 1, 36)) Then
+        index = getIndexFromGUID(table.Cell(i, ColCount).range.Text)
+        If (index <> "0") Then
+           ret = ret + " " + Str(index)
+        End If
+    Else
+        getChildIndexList = ret
+        Exit Function
+        
+      End If
+Next
+ getChildIndexList = Trim(ret)
+      
+End Function
+
+Function findParentRowNumber(table, key)
+ 
+ Dim i
+ Dim dados
+ Dim ColCount
+ findParentRowNumber = 0
+ For i = 1 To table.Rows.Count
+        
+        
+    ColCount = table.Rows(i).Cells.Count
+       
+
+      If (table.Cell(i, ColCount).range.Text = key & Chr(13) & Chr(7)) Then
+           findParentRowNumber = i
+           Exit Function
+          
+        
+      End If
+Next
+
+End Function
+Function getIndexFromGUID(strGuid) As Integer
+                If (InStr(1, strGuid, "_") <> 0) Then
+                    getIndexFromGUID = CInt(Mid(Mid(strGuid, 1, 38), InStr(1, strGuid, "_") + 1))
+                     'TODO: testar com índice 10
+                Else
+                    getIndexFromGUID = 0
+                End If
+                
+End Function
 Sub GerarCardImages()
 '
 '
@@ -454,7 +539,7 @@ Dim i, a
 Dim tblCount
 
 tblCount = ActiveDocument.Tables.Count
-For a = 2 To tblCount
+For a = 1 To tblCount
 Set wrdTbl = ActiveDocument.Tables(a)
 
     '~~> Get the word table Row and Column Counts
@@ -462,22 +547,60 @@ Set wrdTbl = ActiveDocument.Tables(a)
     RowCount = wrdTbl.Rows.Count
 '
 Dim strGuid
-Dim myCells As Range
+Dim myCells As range
+Dim index As Integer
 
 
 With ActiveDocument
     
     For i = 1 To RowCount
-        'só importa se tabela
+        
+        
        ColCount = .Tables(a).Rows(i).Cells.Count
-        If (UCase(.Tables(a).Cell(i, ColCount - 1).Range.Text) = ("X") & Chr(13) & Chr(7)) Then
-            .Tables(a).Cell(i, ColCount - 1).Range.Text = ""
+       
+
+      If (.Tables(a).Cell(i, ColCount).range.Text <> Chr(13) & Chr(7)) Then
+            strGuid = linebreak(.Tables(a).Cell(i, ColCount).range.Text)
+        
+       End If
+        If (UCase(.Tables(a).Cell(i, ColCount - 1).range.Text) = ("C") & Chr(13) & Chr(7)) Then
+             .Tables(a).Cell(i, ColCount - 1).range.Text = ""
+            If (strGuid <> linebreak(.Tables(a).Cell(i, ColCount).range.Text)) Then 'LINHA nova (sem GUID)
+                index = getIndexFromGUID(strGuid)
+              
+                If (index <> 0) Then
+                    strGuid = Mid(strGuid, 1, Len(strGuid) - 1) & index + 1 'guid_ + index
+                Else
+                    strGuid = linebreak(strGuid) + Trim("_1")  'guid + _ + index
+             End If
+        End If
+            
+            
+            
+             
+                    .Tables(a).Cell(i, ColCount).range.Text = strGuid
+                    .Tables(a).Cell(i, ColCount).range.Select
+                    'pinta de COR
+                    Selection.Shading.Texture = wdTextureNone
+                    Selection.Shading.ForegroundPatternColor = wdColorAutomatic
+                    Selection.Shading.BackgroundPatternColor = wdColorTurquoise
+    
+             strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
+                
+                 processTablesImages ActiveDocument, strGuid, i, ColCount, .Tables(a)
+                 
+                 TextFile_Create "c:\temp\", Mid(strGuid, 1, 32), ParseDados(ActiveDocument, .Tables(a), i)
+                
+        End If
+      
+        If (UCase(.Tables(a).Cell(i, ColCount - 1).range.Text) = ("X") & Chr(13) & Chr(7)) Then
+            .Tables(a).Cell(i, ColCount - 1).range.Text = ""
 
    
        
-            If (.Tables(a).Cell(i, ColCount).Range.Text = Chr(13) & Chr(7)) Then
-                .Tables(a).Cell(i, ColCount).Range.Text = GenerateGUID()
-                .Tables(a).Cell(i, ColCount).Range.Select
+            If (.Tables(a).Cell(i, ColCount).range.Text = Chr(13) & Chr(7)) Then
+                .Tables(a).Cell(i, ColCount).range.Text = GenerateGUID()
+                .Tables(a).Cell(i, ColCount).range.Select
                 'pinta de preto
                 Selection.Shading.Texture = wdTextureNone
                 Selection.Shading.ForegroundPatternColor = wdColorAutomatic
@@ -485,62 +608,11 @@ With ActiveDocument
 
             End If
             
-            strGuid = Replace(.Tables(a).Cell(i, ColCount).Range.Text, "{", "")
-            strGuid = Replace(strGuid, "}", "")
-            strGuid = Replace(strGuid, "-", "")
-            strGuid = Mid(strGuid, 1, Len(strGuid) - 2)
+            strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
     
-            Set myCells = .Range(Start:=.Tables(a).Cell(i, 2).Range.Start, _
-            End:=.Tables(a).Cell(i, ColCount - 2).Range.End)
-            myCells.Select
+            processTablesImages ActiveDocument, strGuid, i, ColCount, .Tables(a)
             
-            'Dim tmpStart
-            'tmpStart = Timer
-            
-           
-           ' Do
-            '    DoEvents
-            'Loop While (tmpStart + 1) > Timer
-            
-           ' Selection.Copy
-           Selection.CopyAsPicture
-         
-             
-            Call Paste2("c:\temp\" & strGuid + "_B.emf", ActiveDocument, myCells)
-             
-            
-            
-             
-             Dim texto As String
-             Dim fields(10) As String
-             texto = .Tables(a).Cell(i, 1).Range.Text
-             Dim pos1 As Integer
-             Dim pos2 As Integer
-             pos1 = InStr(1, texto, "**")
-             pos2 = InStr(pos1 + 2, texto, "**")
-             
-             Dim Dados As String
-             If (pos2 > pos1) Then Dados = Mid(texto, pos1 + 2, pos2 - pos1 - 2)
-             
-             
-             Set myCells = .Range(Start:=.Tables(a).Cell(i, 1).Range.Start, _
-                 End:=.Tables(a).Cell(i, 1).Range.End)
-             myCells.Select
-            
-            'tmpStart = Timer
-            'Do
-            '    DoEvents
-            'Loop While (tmpStart + 1) > Timer
-                ' Selection.Copy
-                Selection.CopyAsPicture
-            
-           
-            
-            'Set myCells = .Range(Start:=.Tables(a).Cell(i, ColCount - 1).Range.Start, _
-            'End:=.Tables(a).Cell(i, ColCount - 1).Range.End)
-            Call Paste2("c:\temp\" & strGuid + "_F.emf", ActiveDocument, myCells)
-            
-            TextFile_Create "c:\temp\", strGuid, Dados
+            TextFile_Create "c:\temp\", strGuid, ParseDados(ActiveDocument, .Tables(a), i)
             
     End If
     Next
@@ -557,11 +629,60 @@ Next
 
 
 End Sub
+Function formatGuid(strGuid)
 
+    strGuid = Replace(strGuid, "{", "")
+            strGuid = Replace(strGuid, "}", "")
+            strGuid = Replace(strGuid, "-", "")
+            formatGuid = Mid(strGuid, 1, Len(strGuid) - 2)
+End Function
+Function ParseDados(activeDoc, table, i) As String
+Dim ret As String
+With activeDoc
+Dim parentRowIndex
+Dim texto As String
+             Dim fields(10) As String
+             
+             parentRowIndex = findParentRowNumber(table, Mid(table.Cell(i, table.Rows(i).Cells.Count).range.Text, 1, 36))
+             texto = table.Cell(parentRowIndex, 1).range.Text
+             Dim pos1 As Integer
+             Dim pos2 As Integer
+             pos1 = InStr(1, texto, "**")
+             pos2 = InStr(pos1 + 2, texto, "**")
+             
+             
+            
+             If (pos2 > pos1) Then
+                ret = Mid(texto, pos1 + 2, pos2 - pos1 - 2) & " C:" & getChildIndexList(parentRowIndex, table)
+            End If
+End With
+ParseDados = ret
+End Function
+Sub processTablesImages(activeDoc, strGuid, i, ColCount, table)
+Dim myCells
+With activeDoc
+ Set myCells = .range(start:=table.Cell(i, 2).range.start, _
+            End:=table.Cell(i, ColCount - 2).range.End)
+        
+           myCells.Select
+            
+           
+           Selection.CopyAsPicture
+         
+            Call Paste2("c:\temp\" & strGuid + "_B.emf", ActiveDocument, myCells)
+             
+            Set myCells = .range(start:=table.Cell(i, 1).range.start, _
+                 End:=table.Cell(i, 1).range.End)
+            myCells.Select
+            Selection.CopyAsPicture
+            
+            Call Paste2("c:\temp\" & strGuid + "_F.emf", ActiveDocument, myCells)
+End With
+End Sub
 Function ClipBoard_GetData()
    Dim hClipMemory As Long
    Dim lpClipMemory As Long
-   Dim MyString As String
+   Dim myString As String
    Dim RetVal As Long
  
    If OpenClipboard(0&) = 0 Then
@@ -582,12 +703,12 @@ Function ClipBoard_GetData()
    lpClipMemory = GlobalLock(hClipMemory)
  
    If Not IsNull(lpClipMemory) Then
-      MyString = Space$(MAXSIZE)
-      RetVal = lstrcpy(MyString, lpClipMemory)
+      myString = Space$(MAXSIZE)
+      RetVal = lstrcpy(myString, lpClipMemory)
       RetVal = GlobalUnlock(hClipMemory)
        
       ' Peel off the null terminating character.
-      MyString = Mid(MyString, 1, InStr(1, MyString, Chr$(0), 0) - 1)
+      myString = Mid(myString, 1, InStr(1, myString, Chr$(0), 0) - 1)
    Else
       MsgBox "Could not lock memory to copy string from."
    End If
@@ -595,7 +716,7 @@ Function ClipBoard_GetData()
 OutOfHere:
  
    RetVal = CloseClipboard()
-   ClipBoard_GetData = MyString
+   ClipBoard_GetData = myString
  
 End Function
 Sub FindInSelection()
@@ -629,8 +750,8 @@ End Sub
 Private Sub Paste(strPath, ActiveDocument, myCells)
 
 With ActiveDocument
-          Set myCells = .Range(Start:=.Tables(1).Cell(1, 1).Range.Start, _
-            End:=.Tables(1).Cell(1, 1).Range.End)
+          Set myCells = .range(start:=.Tables(1).Cell(1, 1).range.start, _
+            End:=.Tables(1).Cell(1, 1).range.End)
             myCells.Select
            Dim tmpStart
             tmpStart = Timer
