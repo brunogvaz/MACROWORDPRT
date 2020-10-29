@@ -402,9 +402,9 @@ Public Function GenerateGUID() As String
 
     For N = 0 To 15
         guid = guid & IIf(ID(N) < 16, "0", "") & Hex$(ID(N))
-        If Len(guid) = 8 Or Len(guid) = 13 Or Len(guid) = 18 Or Len(guid) = 23 Then
-            guid = guid & "-"
-        End If
+       ' If Len(guid) = 8 Or Len(guid) = 13 Or Len(guid) = 18 Or Len(guid) = 23 Then
+        '    guid = guid & "-"
+       ' End If
     Next N
     GenerateGUID = guid
 End Function
@@ -430,7 +430,7 @@ Dim TextFile As Integer
 
 End Sub
 Function linebreak(myString)
-    If Len(myString) <> 0 Then
+    If Len(myString) >= 2 Then
         If Right$(myString, 2) = vbCrLf Or Right$(myString, 2) = vbNewLine Or Right$(myString, 2) = Chr(13) & Chr(7) Then
             linebreak = Left$(myString, Len(myString) - 2)
         Else
@@ -445,7 +445,7 @@ Dim ColCount
       
 Dim key
 ColCount = table.Rows(start).Cells.Count
-key = table.Cell(start, ColCount).range.Text
+key = formatGuid(table.Cell(start, ColCount).range.Text)
 
 For i = start To table.Rows.Count
   
@@ -453,9 +453,9 @@ For i = start To table.Rows.Count
       ColCount = table.Rows(i).Cells.Count
        
 
-      If (Mid(table.Cell(i, ColCount).range.Text, 1, 36) = Mid(key, 1, 36)) Then
+      If (formatGuid(table.Cell(i, ColCount).range.Text) = Mid(key, 1, 32)) Then
         
-           getChildMaxIndex = getIndexFromGUID(table.Cell(i, ColCount).range.Text)
+           getChildMaxIndex = getIndexFromGUID(formatGuid(table.Cell(i, ColCount).range.Text))
     Else
         getChildMaxIndex = 0
         Exit Function
@@ -475,7 +475,7 @@ ret = ""
       
 Dim key
 ColCount = table.Rows(start).Cells.Count
-key = table.Cell(start, ColCount).range.Text
+key = formatGuid(table.Cell(start, ColCount).range.Text)
 
 For i = start To table.Rows.Count
   
@@ -483,13 +483,13 @@ For i = start To table.Rows.Count
       ColCount = table.Rows(i).Cells.Count
        
 
-      If (Mid(table.Cell(i, ColCount).range.Text, 1, 36) = Mid(key, 1, 36)) Then
-        index = getIndexFromGUID(table.Cell(i, ColCount).range.Text)
+      If (Mid(formatGuid(table.Cell(i, ColCount).range.Text), 1, 32) = Mid(key, 1, 32)) Then
+        index = getIndexFromGUID(formatGuid(table.Cell(i, ColCount).range.Text))
         If (index <> "0") Then
            ret = ret + " " + Str(index)
         End If
     Else
-        getChildIndexList = ret
+        getChildIndexList = Trim(ret)
         Exit Function
         
       End If
@@ -498,19 +498,19 @@ Next
       
 End Function
 
-Function findParentRowNumber(table, key)
+Function findParentRowNumber(table, key, childPos)
  
  Dim i
  Dim dados
  Dim ColCount
  findParentRowNumber = 0
- For i = 1 To table.Rows.Count
+ For i = childPos To 1 Step -1
         
         
     ColCount = table.Rows(i).Cells.Count
        
 
-      If (table.Cell(i, ColCount).range.Text = key & Chr(13) & Chr(7)) Then
+      If (formatGuid(table.Cell(i, ColCount).range.Text) = Mid(key, 1, 32)) Then
            findParentRowNumber = i
            Exit Function
           
@@ -537,7 +537,7 @@ Dim ColCount
 Dim RowCount
 Dim i, a
 Dim tblCount
-
+ Dim dados As String
 tblCount = ActiveDocument.Tables.Count
 For a = 1 To tblCount
 Set wrdTbl = ActiveDocument.Tables(a)
@@ -559,19 +559,22 @@ With ActiveDocument
        ColCount = .Tables(a).Rows(i).Cells.Count
        
 
-      If (.Tables(a).Cell(i, ColCount).range.Text <> Chr(13) & Chr(7)) Then
-            strGuid = linebreak(.Tables(a).Cell(i, ColCount).range.Text)
+      'If (.Tables(a).Cell(i, ColCount).range.Text <> Chr(13) & Chr(7)) Then
+       '     strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
         
-       End If
+     ' End If
         If (UCase(.Tables(a).Cell(i, ColCount - 1).range.Text) = ("C") & Chr(13) & Chr(7)) Then
              .Tables(a).Cell(i, ColCount - 1).range.Text = ""
-            If (strGuid <> linebreak(.Tables(a).Cell(i, ColCount).range.Text)) Then 'LINHA nova (sem GUID)
+           'novo
+              strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
+            
+            If (strGuid <> formatGuid(.Tables(a).Cell(i, ColCount).range.Text)) Then 'LINHA nova (sem GUID)
                 index = getIndexFromGUID(strGuid)
               
                 If (index <> 0) Then
                     strGuid = Mid(strGuid, 1, Len(strGuid) - 1) & index + 1 'guid_ + index
                 Else
-                    strGuid = linebreak(strGuid) + Trim("_1")  'guid + _ + index
+                    strGuid = strGuid + Trim("_1")  'guid + _ + index
              End If
         End If
             
@@ -585,11 +588,13 @@ With ActiveDocument
                     Selection.Shading.ForegroundPatternColor = wdColorAutomatic
                     Selection.Shading.BackgroundPatternColor = wdColorTurquoise
     
-             strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
+           
                 
                  processTablesImages ActiveDocument, strGuid, i, ColCount, .Tables(a)
+                
+                 dados = ParseDados(.Tables(a), i)
                  
-                 TextFile_Create "c:\temp\", Mid(strGuid, 1, 32), ParseDados(ActiveDocument, .Tables(a), i)
+                 TextFile_Create "c:\temp\", Mid(strGuid, 1, 32), dados
                 
         End If
       
@@ -612,7 +617,10 @@ With ActiveDocument
     
             processTablesImages ActiveDocument, strGuid, i, ColCount, .Tables(a)
             
-            TextFile_Create "c:\temp\", strGuid, ParseDados(ActiveDocument, .Tables(a), i)
+            
+                 dados = ParseDados(.Tables(a), i)
+                 
+                 TextFile_Create "c:\temp\", Mid(strGuid, 1, 32), dados
             
     End If
     Next
@@ -636,14 +644,14 @@ Function formatGuid(strGuid)
             strGuid = Replace(strGuid, "-", "")
             formatGuid = Mid(strGuid, 1, Len(strGuid) - 2)
 End Function
-Function ParseDados(activeDoc, table, i) As String
+Function ParseDados(table, i) As String
 Dim ret As String
-With activeDoc
+
 Dim parentRowIndex
 Dim texto As String
              Dim fields(10) As String
              
-             parentRowIndex = findParentRowNumber(table, Mid(table.Cell(i, table.Rows(i).Cells.Count).range.Text, 1, 36))
+             parentRowIndex = findParentRowNumber(table, formatGuid(table.Cell(i, table.Rows(i).Cells.Count).range.Text), i)
              texto = table.Cell(parentRowIndex, 1).range.Text
              Dim pos1 As Integer
              Dim pos2 As Integer
@@ -653,9 +661,10 @@ Dim texto As String
              
             
              If (pos2 > pos1) Then
-                ret = Mid(texto, pos1 + 2, pos2 - pos1 - 2) & " C:" & getChildIndexList(parentRowIndex, table)
+                ret = Mid(texto, pos1 + 2, pos2 - pos1 - 2)
             End If
-End With
+            ret = ret & " C:" & getChildIndexList(parentRowIndex, table)
+
 ParseDados = ret
 End Function
 Sub processTablesImages(activeDoc, strGuid, i, ColCount, table)
