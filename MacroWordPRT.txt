@@ -559,14 +559,13 @@ With ActiveDocument
        ColCount = .Tables(a).Rows(i).Cells.Count
        
 
-      'If (.Tables(a).Cell(i, ColCount).range.Text <> Chr(13) & Chr(7)) Then
-       '     strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
+      If (.Tables(a).Cell(i, ColCount).range.Text <> Chr(13) & Chr(7)) Then
+            strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
         
-     ' End If
+      End If
         If (UCase(.Tables(a).Cell(i, ColCount - 1).range.Text) = ("C") & Chr(13) & Chr(7)) Then
              .Tables(a).Cell(i, ColCount - 1).range.Text = ""
-           'novo
-              strGuid = formatGuid(.Tables(a).Cell(i, ColCount).range.Text)
+           
             
             If (strGuid <> formatGuid(.Tables(a).Cell(i, ColCount).range.Text)) Then 'LINHA nova (sem GUID)
                 index = getIndexFromGUID(strGuid)
