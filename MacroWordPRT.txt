@@ -419,7 +419,47 @@ errHandler:
     Debug.Print "Save Picture: (" & Err.Number & ") - " & Err.Description
     Resume errExit
 End Sub
- 
+ '==================================================================================================
+' ## Function to call Windows API and grab a GUID
+'    Using this method as July 2017 Windows 10 security update
+'    throws a permission denied error trying to use: CreateObject("Scriptlet.TypeLib")
+'==================================================================================================
+Function CreateGuidString(Optional AddHyphens As Boolean, _
+                          Optional AddBraces As Boolean) _
+                          As String
+    '// Vars
+    Dim guid As GUID_TYPE
+    Dim strGuid As String
+    Dim retValue As LongPtr
+
+    '// registry GUID format with null
+    '   terminator {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
+    Const guidLength As Long = 39
+
+    retValue = CoCreateGuid(guid)
+
+    '// Get the raw GUID which includes braces and hyphens
+    If retValue = 0 Then
+        strGuid = String$(guidLength, vbNullChar)
+        retValue = StringFromGUID2(guid, StrPtr(strGuid), guidLength)
+        If retValue = guidLength Then
+            CreateGuidString = strGuid
+        End If
+    End If
+
+    '// If AddHyphens is switched from the default True to False,
+    '   remove them from the GUID
+    If Not AddHyphens Then
+        CreateGuidString = Replace(CreateGuidString, "-", vbNullString, Compare:=vbTextCompare)
+    End If
+
+    '// If AddBraces is True from the default False to True,
+    '   leave those curly braces be!
+    If Not AddBraces Then
+        CreateGuidString = Replace(CreateGuidString, "{", vbNullString, Compare:=vbTextCompare)
+        CreateGuidString = Replace(CreateGuidString, "}", vbNullString, Compare:=vbTextCompare)
+    End If
+End Function
 
 Public Function GenerateGUID() As String
     Dim ID(0 To 15) As Byte
@@ -631,7 +671,7 @@ With ActiveDocument
    
        
             If (.Tables(a).Cell(i, ColCount).Range.Text = Chr(13) & Chr(7)) Then
-                .Tables(a).Cell(i, ColCount).Range.Text = GenerateGUID()
+                .Tables(a).Cell(i, ColCount).Range.Text = CreateGuidString(False, False)
                 .Tables(a).Cell(i, ColCount).Range.Select
                 'pinta de preto
                 Selection.Shading.Texture = wdTextureNone
@@ -639,10 +679,9 @@ With ActiveDocument
                 Selection.Shading.BackgroundPatternColor = -587137025
 
             End If
-            
-            strGuid = formatGuid(.Tables(a).Cell(i, ColCount).Range.Text)
+            strGuid = Mid(formatGuid(.Tables(a).Cell(i, ColCount).Range.Text), 1, 32)
     
-            processTablesImages ActiveDocument, strGuid, i, ColCount, .Tables(a)
+            processTablesImages ActiveDocument, Mid(strGuid, 1, 32), i, ColCount, .Tables(a)
             
             
                  dados = ParseDados(.Tables(a), i)
@@ -826,4 +865,6 @@ With ActiveDocument
            
 End With
 End Sub
+
+
 
