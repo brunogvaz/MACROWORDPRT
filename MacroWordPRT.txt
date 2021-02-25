@@ -679,14 +679,15 @@ With ActiveDocument
                 Selection.Shading.BackgroundPatternColor = -587137025
 
             End If
+            
             strGuid = Mid(formatGuid(.Tables(a).Cell(i, ColCount).Range.Text), 1, 32)
     
-            processTablesImages ActiveDocument, Mid(strGuid, 1, 32), i, ColCount, .Tables(a)
+            processTablesImages ActiveDocument, strGuid, i, ColCount, .Tables(a)
             
             
                  dados = ParseDados(.Tables(a), i)
                  
-                 TextFile_Create "c:\temp\", Mid(strGuid, 1, 32), dados
+                 TextFile_Create "c:\temp\", strGuid, dados
             
     End If
     Next
@@ -865,6 +866,4 @@ With ActiveDocument
            
 End With
 End Sub
-
-
 
