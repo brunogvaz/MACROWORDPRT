@@ -615,15 +615,19 @@ Set wrdTbl = ActiveDocument.Tables(a)
     RowCount = wrdTbl.Rows.Count
 '
 Dim strGuid
+Dim novo As Boolean
 Dim myCells As Range
 Dim index As Integer
 
+novo = False
+
+DeleteFile ("c:\temp\end.txt")
 
 With ActiveDocument
     
     For i = 1 To RowCount
         
-        
+       
        ColCount = .Tables(a).Rows(i).Cells.Count
        
 
@@ -637,7 +641,9 @@ With ActiveDocument
             
             If (strGuid <> formatGuid(.Tables(a).Cell(i, ColCount).Range.Text)) Then 'LINHA nova (sem GUID)
                 index = getIndexFromGUID(strGuid)
-              
+                
+                novo = True
+                
                 If (index <> 0) Then
                     strGuid = Mid(strGuid, 1, Len(strGuid) - 1) & index + 1 'guid_ + index
                 Else
@@ -671,6 +677,7 @@ With ActiveDocument
    
        
             If (.Tables(a).Cell(i, ColCount).Range.Text = Chr(13) & Chr(7)) Then
+                novo = True
                 .Tables(a).Cell(i, ColCount).Range.Text = CreateGuidString(False, False)
                 .Tables(a).Cell(i, ColCount).Range.Select
                 'pinta de preto
@@ -692,13 +699,19 @@ With ActiveDocument
     End If
     Next
     
+    If (novo) Then
+     TextFile_Create "c:\temp\", "end_novo", ""
+    Else
+    
+     TextFile_Create "c:\temp\", "end", ""
+    End If
     
     
      
    
    
     End With
-'
+
 Next
 
 
@@ -866,4 +879,16 @@ With ActiveDocument
            
 End With
 End Sub
+
+Sub DeleteFile(ByVal FileToDelete As String)
+   If FileExists(FileToDelete) Then 'See above
+      ' First remove readonly attribute, if set
+      SetAttr FileToDelete, vbNormal
+      ' Then delete the file
+      Kill FileToDelete
+   End If
+End Sub
+Function FileExists(ByVal FileToTest As String) As Boolean
+   FileExists = (Dir(FileToTest) <> "")
+End Function
 
