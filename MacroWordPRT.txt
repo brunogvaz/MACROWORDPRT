@@ -632,19 +632,21 @@ With ActiveDocument
        
 
       If (.Tables(a).Cell(i, ColCount).Range.Text <> Chr(13) & Chr(7)) Then
-            strGuid = formatGuid(.Tables(a).Cell(i, ColCount).Range.Text)
+            
+             strGuid = Mid(formatGuid(.Tables(a).Cell(i, ColCount).Range.Text), 1, 32)
         
       End If
         If (UCase(.Tables(a).Cell(i, ColCount - 1).Range.Text) = ("C") & Chr(13) & Chr(7)) Then
              .Tables(a).Cell(i, ColCount - 1).Range.Text = ""
            
             
-            If (strGuid <> formatGuid(.Tables(a).Cell(i, ColCount).Range.Text)) Then 'LINHA nova (sem GUID)
+            If (strGuid <> Mid(formatGuid(.Tables(a).Cell(i, ColCount).Range.Text), 1, 32)) Then 'LINHA nova (sem GUID)
                 index = getIndexFromGUID(strGuid)
                 
                 novo = True
                 
                 If (index <> 0) Then
+                
                     strGuid = Mid(strGuid, 1, Len(strGuid) - 1) & index + 1 'guid_ + index
                 Else
                     strGuid = strGuid + Trim("_1")  'guid + _ + index
@@ -891,4 +893,6 @@ End Sub
 Function FileExists(ByVal FileToTest As String) As Boolean
    FileExists = (Dir(FileToTest) <> "")
 End Function
+
+
 
