@@ -633,14 +633,14 @@ With ActiveDocument
 
       If (.Tables(a).Cell(i, ColCount).Range.Text <> Chr(13) & Chr(7)) Then
             
-             strGuid = Mid(formatGuid(.Tables(a).Cell(i, ColCount).Range.Text), 1, 32)
+              strGuid = formatGuid(.Tables(a).Cell(i, ColCount).Range.Text)
         
       End If
         If (UCase(.Tables(a).Cell(i, ColCount - 1).Range.Text) = ("C") & Chr(13) & Chr(7)) Then
              .Tables(a).Cell(i, ColCount - 1).Range.Text = ""
            
             
-            If (strGuid <> Mid(formatGuid(.Tables(a).Cell(i, ColCount).Range.Text), 1, 32)) Then 'LINHA nova (sem GUID)
+           If (strGuid <> formatGuid(.Tables(a).Cell(i, ColCount).Range.Text)) Then 'LINHA nova (sem GUID)
                 index = getIndexFromGUID(strGuid)
                 
                 novo = True
@@ -689,7 +689,7 @@ With ActiveDocument
 
             End If
             
-            strGuid = Mid(formatGuid(.Tables(a).Cell(i, ColCount).Range.Text), 1, 32)
+            strGuid = formatGuid(.Tables(a).Cell(i, ColCount).Range.Text)
     
             processTablesImages ActiveDocument, strGuid, i, ColCount, .Tables(a)
             
@@ -724,7 +724,10 @@ Function formatGuid(strGuid)
     strGuid = Replace(strGuid, "{", "")
             strGuid = Replace(strGuid, "}", "")
             strGuid = Replace(strGuid, "-", "")
-            formatGuid = Mid(strGuid, 1, Len(strGuid) - 2)
+            strGuid = Replace(strGuid, Chr(0), "")
+            strGuid = Replace(strGuid, Chr(7), "")
+            formatGuid = Replace(strGuid, Chr(13), "")
+            
 End Function
 Function ParseDados(table, i) As String
 Dim ret As String
